@@ -6,6 +6,8 @@ ruff==0.5.0
 pandas==2.1.4
 numpy==1.26.4
 scikit-learn==1.5.0
+xgboost==2.0.3            # train_attrition import ở module level → test_ml collect cần
+joblib==1.4.2             # train/score_attrition import ở module level → test_ml collect cần
 python-dotenv==1.0.1
 faker==25.8.0              # generator import ở module level
 psycopg2-binary==2.9.9    # generator import ở module level (chỉ connect trong main())
