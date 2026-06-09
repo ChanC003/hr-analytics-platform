@@ -1,0 +1,134 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: hr_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hr_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hr_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-hr_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../sql/init_schema.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hr_user} -d ${POSTGRES_DB:-hr_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mysql:
+    image: mysql:8.0
+    container_name: hr_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_USER: ${MYSQL_USER:-hr_analyst}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-hr_mysql_pass}
+      MYSQL_DATABASE: ${MYSQL_DB:-hr_warehouse}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../sql/mysql_raw_schema.sql:/docker-entrypoint-initdb.d/01_raw.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "hr_analyst", "--password=hr_mysql_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Web DB admin — xem cả MySQL + PostgreSQL qua trình duyệt tại http://localhost:8081
+  adminer:
+    image: adminer:4
+    container_name: hr_adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql   # server mặc định khi mở; đổi sang 'postgres' trong form login để xem PG
+    depends_on:
+      - mysql
+      - postgres
+
+  # ────────────────────────────────────────────────────────────────
+  # PHASE 6 — Airflow orchestration (chỉ chạy khi --profile airflow)
+  # ────────────────────────────────────────────────────────────────
+
+  # Metadata DB RIÊNG cho Airflow (tách khỏi OLTP postgres để không lẫn concern)
+  airflow_postgres:
+    image: postgres:15-alpine
+    container_name: hr_airflow_db
+    profiles: ["airflow"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Image dùng chung cho init + scheduler/webserver
+  airflow:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    image: hr-airflow:latest
+    container_name: hr_airflow
+    profiles: ["airflow"]
+    restart: unless-stopped
+    depends_on:
+      airflow_postgres: { condition: service_healthy }
+      mysql:            { condition: service_healthy }
+      postgres:         { condition: service_healthy }
+    environment:
+      # ── Airflow core ──
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      # ── Override host cho script/dbt: nối DB container qua SERVICE NAME (không localhost) ──
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"        # cổng nội bộ container, không phải 5433 map ra host
+      POSTGRES_DB: ${POSTGRES_DB:-hr_db}
+      POSTGRES_USER: ${POSTGRES_USER:-hr_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hr_pass}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DB: ${MYSQL_DB:-hr_warehouse}
+      MYSQL_USER: ${MYSQL_USER:-hr_analyst}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-hr_mysql_pass}
+      DBT_PROFILES_DIR: /opt/airflow/dbt_profile
+      # Slack alert (tùy chọn): để trống thì task alert chỉ log, không gửi
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      ATTRITION_ALERT_THRESHOLD: ${ATTRITION_ALERT_THRESHOLD:-10}
+    volumes:
+      - ../dags:/opt/airflow/dags
+      - ../src:/opt/airflow/src                     # script phase 2-5 DAG gọi tới
+      - ../hr_analytics:/opt/airflow/hr_analytics   # dbt project
+      - ./dbt_profile:/opt/airflow/dbt_profile      # profile container (host=mysql)
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "8080:8080"   # Airflow UI
+    # 1 lệnh: init DB + tạo admin user (nếu cần) rồi chạy standalone (scheduler+webserver)
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin}
+                 --firstname HR --lastname Admin --role Admin --email admin@hr.local || true &&
+               airflow standalone"
+
+volumes:
+  postgres_data:
+  mysql_data:
+  airflow_db_data:
+  airflow_logs:

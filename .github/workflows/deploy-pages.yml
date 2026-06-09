@@ -1,0 +1,40 @@
+name: Deploy Dashboard to GitHub Pages
+
+# Public dashboard tĩnh (src/dashboard/) lên GitHub Pages mỗi khi push main.
+# Dashboard đọc data.js đã generate sẵn → không cần DB, chạy 100% tĩnh.
+on:
+  push:
+    branches: [main]
+    paths: ["src/dashboard/**", ".github/workflows/deploy-pages.yml"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Chỉ 1 deploy chạy 1 lúc
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dashboard folder
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/dashboard      # chỉ đẩy folder dashboard (index.html + css + js/data.js)
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

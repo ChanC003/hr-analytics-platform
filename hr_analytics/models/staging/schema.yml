@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: stg_employees
+    description: "Cleaned employee records from raw layer"
+    columns:
+      - name: employee_id
+        tests: [not_null, unique]
+      - name: hire_date
+        tests: [not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['active', 'terminated', 'on_leave']
+      - name: employment_type
+        tests:
+          - accepted_values:
+              values: ['full_time', 'part_time', 'contract']
+
+  - name: stg_salary_history
+    columns:
+      - name: salary_id
+        tests: [not_null, unique]
+      - name: salary_amount
+        tests: [not_null]
+
+  - name: stg_performance_reviews
+    columns:
+      - name: review_id
+        tests: [not_null, unique]
+      - name: score
+        tests: [not_null]
+
+  - name: stg_job_changes
+    columns:
+      - name: change_id
+        tests: [not_null, unique]
+      - name: change_type
+        tests:
+          - accepted_values:
+              values: ['promotion', 'transfer', 'demotion', 'termination', 'rehire']

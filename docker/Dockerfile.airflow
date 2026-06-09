@@ -1,0 +1,33 @@
+# Airflow image cho HR pipeline — Phase 6
+# Base: Airflow official (Python 3.11) + deps của các script phase 2–5 + dbt-mysql.
+# DAG gọi lại đúng các script đã có (load_to_mysql / dbt / score_attrition / export_marts).
+FROM apache/airflow:2.9.3-python3.11
+
+USER root
+# Build deps cho mysqlclient / psycopg2 / xgboost runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential default-libmysqlclient-dev pkg-config libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+# Pin theo constraint của Airflow để không phá môi trường Airflow core.
+# Gộp deps của ingest + ml + dbt (mysql adapter). dbt 1.7.x khớp manifest hiện có.
+# pandas pin 2.1.4 (KHÔNG 2.2.x): pandas 2.2 bỏ hỗ trợ SQLAlchemy 1.4, mà Airflow 2.9 buộc SQLAlchemy <2.0.
+# 2.1.4 chạy đúng với cả SQLAlchemy 1.4 (container) lẫn code ML. Host vẫn dùng 2.2.2 không sao.
+RUN pip install --no-cache-dir \
+        psycopg2-binary==2.9.9 \
+        mysql-connector-python==8.4.0 \
+        SQLAlchemy==1.4.52 \
+        pandas==2.1.4 \
+        numpy==1.26.4 \
+        scikit-learn==1.5.0 \
+        xgboost==2.0.3 \
+        shap==0.45.1 \
+        joblib==1.4.2 \
+        python-dotenv==1.0.1 \
+        dbt-core==1.7.19 \
+        dbt-mysql==1.7.0
+
+# dbt profile dùng env-var (xem profiles.yml) — đặt thư mục profiles trong container.
+ENV DBT_PROFILES_DIR=/opt/airflow/dbt_profile

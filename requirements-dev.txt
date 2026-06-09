@@ -1,0 +1,13 @@
+# Dev / CI dependencies — test + lint (Phase 7)
+pytest==8.2.2
+pytest-cov==5.0.0
+ruff==0.5.0
+# Runtime deps cần để import module khi test (subset của src/*/requirements.txt)
+pandas==2.1.4
+numpy==1.26.4
+scikit-learn==1.5.0
+python-dotenv==1.0.1
+faker==25.8.0              # generator import ở module level
+psycopg2-binary==2.9.9    # generator import ở module level (chỉ connect trong main())
+mysql-connector-python==8.4.0
+SQLAlchemy==2.0.50

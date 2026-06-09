@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: dim_employee
+    description: "SCD Type 2 employee dimension — one row per employee version"
+    columns:
+      - name: employee_sk
+        tests: [not_null, unique]
+      - name: employee_id
+        tests: [not_null]
+      - name: is_current
+        tests:
+          - accepted_values:
+              values: [0, 1]
+
+  - name: dim_department
+    columns:
+      - name: department_id
+        tests: [not_null, unique]
+
+  - name: dim_job_level
+    columns:
+      - name: level_id
+        tests: [not_null, unique]
+
+  - name: fct_performance
+    columns:
+      - name: review_id
+        tests: [not_null, unique]
+      - name: employee_id
+        tests: [not_null]
+
+  - name: fct_attrition
+    columns:
+      - name: attrition_id
+        tests: [not_null, unique]
+      - name: employee_id
+        tests: [not_null]
+      - name: exit_type
+        tests:
+          - accepted_values:
+              values: ['voluntary', 'involuntary', 'retirement']
+
+  - name: fct_salary
+    columns:
+      - name: salary_id
+        tests: [not_null, unique]

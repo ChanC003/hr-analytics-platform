@@ -1,0 +1,15 @@
+# dbt profile DÙNG TRONG CONTAINER Airflow (Phase 6).
+# Khác profile ở ~/.dbt/profiles.yml (host, server=127.0.0.1) — ở đây host = service name 'mysql'
+# qua env-var, để dbt trong container Airflow nối được MySQL container cùng network.
+# Mount vào /opt/airflow/dbt_profile (xem DBT_PROFILES_DIR trong Dockerfile.airflow).
+hr_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: mysql
+      server: "{{ env_var('MYSQL_HOST', 'mysql') }}"
+      port: "{{ env_var('MYSQL_PORT', '3306') | int }}"
+      database: "{{ env_var('MYSQL_DB', 'hr_warehouse') }}"
+      schema: "{{ env_var('MYSQL_DB', 'hr_warehouse') }}"
+      username: "{{ env_var('MYSQL_USER', 'hr_analyst') }}"
+      password: "{{ env_var('MYSQL_PASSWORD', 'hr_mysql_pass') }}"

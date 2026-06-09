@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Analytics Platform — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+
+    <!-- ── Sidebar ── -->
+    <nav class="nav" id="nav">
+      <div class="nav-brand">
+        <div class="nav-logo">HR</div>
+        <div class="nav-brand-txt">
+          <strong>HR Analytics</strong>
+          <span>Portfolio · 05</span>
+        </div>
+      </div>
+      <div class="nav-items">
+        <button class="nav-item active" data-tab="status">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V8h4v12M10 20V4h4v16M16 20v-7h4v7"/></svg>
+          <span class="nav-item-txt">
+            <span class="nav-item-num">01</span>
+            <strong>Báo cáo thực trạng</strong>
+            <small>Headcount · Attrition · Lương</small>
+          </span>
+        </button>
+        <button class="nav-item" data-tab="ml">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 014 4 4 4 0 01-1 7 4 4 0 01-3 5 4 4 0 01-3-5 4 4 0 01-1-7 4 4 0 014-4zM12 13v8M8 9h.01M16 9h.01"/></svg>
+          <span class="nav-item-txt">
+            <span class="nav-item-num">02</span>
+            <strong>ML · Dự báo</strong>
+            <small>Attrition risk · SHAP</small>
+          </span>
+        </button>
+      </div>
+      <div class="nav-foot">
+        <div class="nav-foot-row"><span class="nav-foot-dot"></span>hr-analytics · portfolio</div>
+        <p>Nguồn: mart <code>mart_headcount</code> / <code>attrition_scores</code> (MySQL warehouse).</p>
+        <p class="nav-meta" id="gen-meta" style="margin-top:6px"></p>
+      </div>
+    </nav>
+
+    <!-- ── Main ── -->
+    <main class="main" id="main">
+
+      <!-- Filter bar — controls injected per-tab by render.js -->
+      <div class="filterbar" id="filterbar"></div>
+
+      <!-- Panels -->
+      <section class="panel active" id="panel-status"></section>
+      <section class="panel"        id="panel-ml"></section>
+    </main>
+
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/constants.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/init.js"></script>
+</body>
+</html>

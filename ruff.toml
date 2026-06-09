@@ -1,0 +1,14 @@
+# Ruff config — Phase 7 CI lint
+target-version = "py311"
+line-length = 120
+
+[lint]
+# Mặc định E (pycodestyle) + F (pyflakes). Bỏ qua các rule không phù hợp project:
+ignore = [
+    "E402",  # import sau sys.stdout.reconfigure(utf-8) — BẮT BUỘC chạy trước trên Windows
+    "E501",  # độ dài dòng (đã set line-length 120, không gắt thêm)
+    "E741",  # tên biến 1 ký tự (l, r trong loop ngắn) — chấp nhận trong code phân tích
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["E402"]

@@ -1,0 +1,59 @@
+version: 2
+
+sources:
+  - name: hr_warehouse
+    database: hr_warehouse
+    schema: hr_warehouse
+    description: "Raw layer — ingested from PostgreSQL OLTP"
+    tables:
+      - name: raw_employees
+        description: "Employee master records"
+        columns:
+          - name: employee_id
+            tests: [not_null, unique]
+          - name: hire_date
+            tests: [not_null]
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['active', 'terminated', 'on_leave']
+
+      - name: raw_departments
+        columns:
+          - name: department_id
+            tests: [not_null, unique]
+
+      - name: raw_job_levels
+        columns:
+          - name: level_id
+            tests: [not_null, unique]
+
+      - name: raw_salary_history
+        columns:
+          - name: salary_id
+            tests: [not_null, unique]
+          - name: employee_id
+            tests: [not_null]
+          - name: salary_amount
+            tests: [not_null]
+
+      - name: raw_performance_reviews
+        columns:
+          - name: review_id
+            tests: [not_null, unique]
+          - name: employee_id
+            tests: [not_null]
+          - name: score
+            tests: [not_null]
+
+      - name: raw_job_changes
+        columns:
+          - name: change_id
+            tests: [not_null, unique]
+          - name: employee_id
+            tests: [not_null]
+
+      - name: raw_recruitment_events
+        columns:
+          - name: event_id
+            tests: [not_null, unique]

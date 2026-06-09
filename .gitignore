@@ -1,0 +1,53 @@
+# Secrets — KHÔNG commit .env (chứa password thật), chỉ commit .env.example
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# dbt
+hr_analytics/target/
+hr_analytics/dbt_packages/
+hr_analytics/logs/
+logs/
+
+# Airflow (Phase 6) — standalone tự sinh các file này, KHÔNG commit
+dags/__pycache__/
+airflow.cfg
+airflow.db
+webserver_config.py
+standalone_admin_password.txt
+airflow-webserver.pid
+
+# Data — không commit data lớn / generated
+data/*.csv
+data/*.parquet
+data/*.json
+data/*.sql.gz
+!data/.gitkeep
+
+# ML artifacts — ignore model binary, GIỮ metrics/feature json để show kết quả
+*.pkl
+*.joblib
+*.model
+
+# Test / CI artifacts (Phase 7)
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

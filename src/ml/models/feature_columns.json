@@ -1,0 +1,23 @@
+[
+  "department_id",
+  "level_id",
+  "num_reviews",
+  "num_managers",
+  "avg_score",
+  "last_score",
+  "last_4q_avg",
+  "last_score_delta",
+  "num_salary_changes",
+  "current_salary",
+  "last_salary_delta_pct",
+  "days_since_last_raise",
+  "age",
+  "tenure_days_at_cutoff",
+  "dept_attrition_rate",
+  "gender_female",
+  "gender_male",
+  "gender_non_binary",
+  "employment_type_contract",
+  "employment_type_full_time",
+  "employment_type_part_time"
+]

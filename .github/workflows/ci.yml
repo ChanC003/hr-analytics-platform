@@ -1,0 +1,108 @@
+name: CI
+
+# CI cho repo HR Analytics Platform (project 05 đứng riêng làm repo root).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  # ── Job 1: lint + unit test (nhanh, KHÔNG cần DB) ──
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dev deps
+        run: pip install -r requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check src dags tests
+      - name: Unit tests (no DB)
+        run: pytest -m "not db" --cov=src --cov-report=term-missing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: JS helper tests
+        run: node tests/js/test_helpers.mjs
+
+  # ── Job 2: integration — pipeline thật trên MySQL + Postgres (quality gate) ──
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: hr_user
+          POSTGRES_PASSWORD: hr_pass
+          POSTGRES_DB: hr_db
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U hr_user -d hr_db"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: hr_warehouse
+          MYSQL_USER: hr_analyst
+          MYSQL_PASSWORD: hr_mysql_pass
+          MYSQL_ROOT_PASSWORD: root_pass
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -u root --password=root_pass"
+          --health-interval 10s --health-timeout 5s --health-retries 15
+
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5433"
+      POSTGRES_DB: hr_db
+      POSTGRES_USER: hr_user
+      POSTGRES_PASSWORD: hr_pass
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: "3306"
+      MYSQL_DB: hr_warehouse
+      MYSQL_USER: hr_analyst
+      MYSQL_PASSWORD: hr_mysql_pass
+      GENERATOR_EMPLOYEE_COUNT: "1500"
+      GENERATOR_YEARS: "3"
+      GENERATOR_SEED: "42"
+      DBT_PROFILES_DIR: ${{ github.workspace }}/docker/dbt_profile
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install all deps
+        run: |
+          pip install -r src/generator/requirements.txt
+          pip install -r src/ingest/requirements.txt
+          pip install -r src/ml/requirements.txt
+          pip install -r requirements-dev.txt
+          pip install "dbt-core==1.7.19" "dbt-mysql==1.7.0"
+      - name: Seed OLTP schema (Postgres)
+        run: psql "postgresql://hr_user:hr_pass@127.0.0.1:5433/hr_db" -f sql/init_schema.sql
+      - name: Seed warehouse schema (MySQL)
+        run: mysql -h 127.0.0.1 -u hr_analyst -phr_mysql_pass hr_warehouse < sql/mysql_raw_schema.sql
+      - name: Generate synthetic data → OLTP
+        run: python src/generator/generate_hr_data.py --truncate
+      - name: Ingest OLTP → MySQL warehouse
+        run: python src/ingest/load_to_mysql.py --full-load
+      - name: dbt run (build 18 models)
+        run: cd hr_analytics && dbt run --no-use-colors
+      - name: dbt test (QUALITY GATE — fail dừng pipeline)
+        run: cd hr_analytics && dbt test --no-use-colors
+      - name: ML train + score
+        run: |
+          cd src/ml
+          python train_attrition.py
+          python score_attrition.py
+      - name: Export dashboard data
+        run: cd src/dashboard && python export_marts.py
+      - name: Integration tests (DB-marked)
+        run: pytest -m db
