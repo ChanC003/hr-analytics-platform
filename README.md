@@ -2,10 +2,9 @@
 
 **Tagline:** People data → insight → action — workforce analytics from hire to exit
 
-<!-- Sau khi push lên GitHub, đổi <USERNAME> để badge + link demo hoạt động: -->
-<!-- ![CI](https://github.com/<USERNAME>/hr-analytics-platform/actions/workflows/ci.yml/badge.svg) -->
+![CI](https://github.com/ChanC003/hr-analytics-platform/actions/workflows/ci.yml/badge.svg)
 
-**🔗 Live Dashboard:** `https://<USERNAME>.github.io/hr-analytics-platform/` *(bật sau khi deploy — xem [DEPLOY.md](DEPLOY.md))*
+**🔗 Live Dashboard:** https://chanc003.github.io/hr-analytics-platform/ *(bật sau khi deploy — xem [DEPLOY.md](DEPLOY.md))*
 
 > **Push GitHub + public dashboard:** xem [DEPLOY.md](DEPLOY.md) — repo riêng + GitHub Pages.
 
