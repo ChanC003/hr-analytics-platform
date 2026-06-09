@@ -3,6 +3,9 @@
 *.env
 !.env.example
 
+# Nhật ký build nội bộ — giữ local, không đưa lên GitHub
+docs/build-journey.md
+
 # Python
 __pycache__/
 *.py[cod]
