@@ -32,7 +32,7 @@ ingest → dbt_run → dbt_test (QUALITY GATE) → ml_score → export_dashboard
 # 1) Dựng stack DB (nếu chưa) + Airflow
 docker compose -f docker/docker-compose.yml --profile airflow up -d --build
 
-# 2) Mở UI: http://localhost:8080  (user/pass: admin/admin — đổi trong .env)
+# 2) Mở UI: http://localhost:8080  (user/pass: AIRFLOW_ADMIN_USER/AIRFLOW_ADMIN_PASSWORD từ .env)
 #    Bật toggle DAG 'hr_daily_pipeline' rồi Trigger, hoặc:
 docker exec hr_airflow airflow dags trigger hr_daily_pipeline
 

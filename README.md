@@ -4,9 +4,9 @@
 
 ![CI](https://github.com/ChanC003/hr-analytics-platform/actions/workflows/ci.yml/badge.svg)
 
-**🔗 Live Dashboard:** https://chanc003.github.io/hr-analytics-platform/ *(bật sau khi deploy — xem [DEPLOY.md](DEPLOY.md))*
+**🔗 Live Dashboard:** https://chanc003.github.io/hr-analytics-platform/ *(enabled after deploy — see [DEPLOY.md](DEPLOY.md))*
 
-> **Push GitHub + public dashboard:** xem [DEPLOY.md](DEPLOY.md) — repo riêng + GitHub Pages.
+> **Push GitHub + public dashboard:** see [DEPLOY.md](DEPLOY.md) — separate repo + GitHub Pages.
 
 ---
 
@@ -46,18 +46,18 @@ Schedule   Attrition Scoring
    └────┬────┘
         │
   HTML Dashboard (GHN light theme)
-  Tab 1 Báo cáo thực trạng (5 section) · Tab 2 ML Dự báo
+  Tab 1 Status Report (5 sections) · Tab 2 ML Prediction
         │
    Airflow DAG (daily) + CI/CD (GitHub Actions)
 ```
 
-> **Lưu ý kiến trúc:** Ban đầu dự định dùng Redshift via LocalStack, nhưng LocalStack Community
-> không expose endpoint Redshift thật (port 5439). Đã chuyển sang **MySQL 8.0** làm analytical
-> warehouse — chạy được hoàn toàn local, dbt-mysql adapter ổn định.
+> **Architecture note:** Originally planned to use Redshift via LocalStack, but LocalStack Community
+> does not expose a real Redshift endpoint (port 5439). Switched to **MySQL 8.0** as the analytical
+> warehouse — fully local, dbt-mysql adapter is stable.
 
 ---
 
-## Dataset (đã generate thực tế)
+## Dataset (generated)
 
 Synthetic dataset — 10,000 employees, 3 years, seed=42:
 
@@ -69,12 +69,12 @@ Synthetic dataset — 10,000 employees, 3 years, seed=42:
 | `salary_history` | 30,426 | Salary changes over time |
 | `performance_reviews` | 75,708 | Quarterly reviews |
 | `job_changes` | 6,465 | Promotions, transfers, terminations |
-| `recruitment_events` | 110,155 | Hiring funnel events (nhiều ứng viên/requisition, rớt dần) |
+| `recruitment_events` | 110,155 | Hiring funnel events (multiple candidates per requisition, progressive drop-off) |
 
-Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
+Full load PostgreSQL → MySQL: **~232,765 rows in ~30s**.
 
-> Số liệu trên là bản **regenerate ở Phase 4** (thêm causal signal cho ML — xem `processing.md`).
-> Generator dùng seed cố định nên chạy lại ra đúng các con số này.
+> The figures above reflect the **Phase 4 regeneration** (added causal signal for ML — see `processing.md`).
+> The generator uses a fixed seed, so re-running produces these exact numbers.
 
 ---
 
@@ -99,10 +99,10 @@ Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
 
 ```
 04-HR-Analytics-Platform/
-├── .env.example            ← Mẫu env vars (KHÔNG commit .env thật)
-├── .gitignore              ← Ignore .env, target/, __pycache__, data lớn
+├── .env.example            ← Env vars template (DO NOT commit real .env)
+├── .gitignore              ← Ignore .env, target/, __pycache__, large data files
 ├── README.md
-├── processing.md           ← Tiến trình từng phase
+├── processing.md           ← Phase-by-phase progress log
 ├── docker/
 │   └── docker-compose.yml  ← PostgreSQL (5433) + MySQL (3306)
 ├── sql/
@@ -113,7 +113,7 @@ Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
 │   ├── ingest/             ← PostgreSQL → MySQL loader (incremental)
 │   ├── ml/                 ← Attrition model (Phase 4 ✅) + evaluate_attrition
 │   └── dashboard/          ← Static HTML dashboard (Phase 5 ✅)
-├── hr_analytics/           ← dbt project (tạo bằng `dbt init`)
+├── hr_analytics/           ← dbt project (created with `dbt init`)
 │   └── models/
 │       ├── staging/        ← 7 views: stg_*
 │       ├── core/           ← dim_* + fct_* (tables)
@@ -127,8 +127,8 @@ Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
     └── screenshots/
 ```
 
-> dbt models nằm trong `hr_analytics/` (scaffold chuẩn từ `dbt init`), **không** ở `models/` root.
-> Profile `hr_analytics` đặt ở `~/.dbt/profiles.yml`.
+> dbt models live inside `hr_analytics/` (standard scaffold from `dbt init`), **not** at `models/` root.
+> Profile `hr_analytics` is set in `~/.dbt/profiles.yml`.
 
 ---
 
@@ -136,10 +136,10 @@ Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
 
 ```bash
 # 1. Start services (PostgreSQL + MySQL + Adminer)
-cp .env.example .env          # rồi điền password
+cp .env.example .env          # fill in passwords for the variables in .env
 docker-compose -f docker/docker-compose.yml up -d
 
-# 2. Generate synthetic data vào PostgreSQL
+# 2. Generate synthetic data into PostgreSQL
 pip install -r src/generator/requirements.txt
 python src/generator/generate_hr_data.py --truncate
 
@@ -161,29 +161,29 @@ cd ../..
 
 # 6. Dashboard                      (Phase 5 — DONE, 2 tab / 5 section)
 python src/dashboard/export_marts.py   # query mart_* + attrition_scores → js/data.js
-start src/dashboard/index.html         # mở trực tiếp file (không cần server)
+start src/dashboard/index.html         # open file directly (no server needed)
 ```
 
-> ⚠️ Nếu chạy lại generator với `--truncate`, BẮT BUỘC dùng `load_to_mysql.py --full-load`
-> (không phải incremental) để reset watermark — nếu không MySQL sẽ lệch PostgreSQL.
+> ⚠️ If you re-run the generator with `--truncate`, you MUST use `load_to_mysql.py --full-load`
+> (not incremental) to reset the watermark — otherwise MySQL will drift out of sync with PostgreSQL.
 
-### Xem database
+### Viewing the database
 
-> ⚠️ **MySQL (3306) và PostgreSQL (5433) KHÔNG mở được bằng trình duyệt** — chúng nói
-> giao thức TCP riêng, không phải HTTP. Mở `localhost:3306` ra `ERR_INVALID_HTTP_RESPONSE`,
-> `localhost:5433` ra `ERR_EMPTY_RESPONSE` — đó là **bình thường**, nghĩa là DB đang sống.
+> ⚠️ **MySQL (3306) and PostgreSQL (5433) cannot be opened in a browser** — they speak their own
+> TCP protocol, not HTTP. Opening `localhost:3306` returns `ERR_INVALID_HTTP_RESPONSE`,
+> `localhost:5433` returns `ERR_EMPTY_RESPONSE` — this is **normal** and means the DB is running.
 
-Để xem data, dùng một trong các cách:
+To inspect data, use one of the following:
 
-| Cách | Chi tiết |
+| Method | Details |
 |---|---|
-| **Adminer (web UI)** | http://localhost:8081 — server `mysql` hoặc `postgres` (tên service, không phải 127.0.0.1) |
-| DB client GUI | DBeaver / TablePlus → host `127.0.0.1`, port `3306` (MySQL) hoặc `5433` (PG) |
-| CLI | `docker exec hr_mysql mysql -u hr_analyst -p hr_warehouse` |
+| **Adminer (web UI)** | http://localhost:8081 — server `mysql` or `postgres` (service name, not 127.0.0.1) |
+| DB client GUI | DBeaver / TablePlus → host `127.0.0.1`, port `3306` (MySQL) or `5434` (PG) |
+| CLI | `docker exec hr_mysql mysql -u mysql -p hr_db` |
 
-**Adminer login:**
-- MySQL → System: `MySQL`, Server: `mysql`, User: `hr_analyst`, Pass: `hr_mysql_pass`, DB: `hr_warehouse`
-- PostgreSQL → System: `PostgreSQL`, Server: `postgres`, User: `hr_user`, Pass: `hr_pass`, DB: `hr_db`
+**Adminer login** (use values from `.env`):
+- MySQL → System: `MySQL`, Server: `mysql`, User: `MYSQL_USER`, Pass: `MYSQL_PASSWORD`, DB: `MYSQL_DB`
+- PostgreSQL → System: `PostgreSQL`, Server: `postgres`, User: `POSTGRES_USER`, Pass: `POSTGRES_PASSWORD`, DB: `POSTGRES_DB`
 
 ---
 
@@ -199,7 +199,7 @@ start src/dashboard/index.html         # mở trực tiếp file (không cần s
 | `dim_date` | 2,922 | Calendar 2020–2027 (recursive CTE) |
 | `dim_department` | 5 | |
 | `dim_job_level` | 6 | |
-| `dim_employee` | 10,930 | **SCD Type 2** — version theo promotion |
+| `dim_employee` | 10,930 | **SCD Type 2** — versioned by promotion |
 | `fct_performance` | 75,708 | Quarterly scores |
 | `fct_salary` | 30,426 | Salary history |
 | `fct_attrition` | 5,535 | Exit events (voluntary/involuntary/retirement) |
@@ -220,7 +220,7 @@ start src/dashboard/index.html         # mở trực tiếp file (không cần s
 - Binary classifier: will employee leave in next **180 days**?
 - Features: tenure, performance trend, salary delta vs band, dept attrition rate (21 features)
 - SHAP values explain each prediction — "top 3 reasons this person might leave"
-- **Đã validate độ tin cậy**: out-of-time 0.695 · CV 0.718±0.007 · baseline LogReg · calibration (xem `evaluate_attrition.py`)
+- **Validated reliability**: out-of-time 0.695 · CV 0.718±0.007 · baseline LogReg · calibration (see `evaluate_attrition.py`)
 
 ### 2. HR Dimensional Model (dbt) — *Phase 3 DONE*
 - `dim_employee` — SCD Type 2 cho job/level changes (point-in-time correct)
@@ -228,30 +228,30 @@ start src/dashboard/index.html         # mở trực tiếp file (không cần s
 - `mart_headcount` / `mart_attrition` / `mart_compensation` / `mart_hiring`
 
 ### 3. Dashboard (2 tab / 5 section) — *Phase 5 ✅*
-**Tab 1 — Báo cáo thực trạng:** 5 section (Headcount · Attrition · Performance · Compensation · Hiring) +
-Phân tích + Khuyến nghị vận hành. **Tab 2 — ML · Dự báo:** risk band + SHAP driver + heatmap Phòng×Cấp.
-GHN light theme, canvas charts, filter ăn khớp grain data (dept/level/date-range/gran/gender/risk/tenure),
-trend-strip + Δ cùng kỳ, xuất CSV mỗi bảng.
+**Tab 1 — Status Report:** 5 sections (Headcount · Attrition · Performance · Compensation · Hiring) +
+Analysis + Operational Recommendations. **Tab 2 — ML · Prediction:** risk band + SHAP driver + Dept×Level heatmap.
+GHN light theme, canvas charts, filters aligned to data grain (dept/level/date-range/gran/gender/risk/tenure),
+trend-strip + period-over-period Δ, CSV export per table.
 
 ### 4. Airflow Orchestration — Phase 6 ✅
 DAG `hr_daily_pipeline` (schedule `0 6 * * *`):
 `ingest → dbt run → dbt test (quality gate) → ml score → export dashboard → attrition alert`.
-`dbt test` fail → pipeline dừng, dashboard không bị publish data lỗi.
+`dbt test` failure → pipeline stops, dashboard is not published with bad data.
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile airflow up -d --build
-# UI: http://localhost:8080 (admin/admin) — xem dags/README.md
+# UI: http://localhost:8080 (AIRFLOW_ADMIN_USER/AIRFLOW_ADMIN_PASSWORD from .env) — see dags/README.md
 ```
 
 ### 5. CI/CD + Test Automation — Phase 7 ✅
-GitHub Actions (`.github/workflows/hr-analytics-ci.yml`) chạy mỗi push/PR:
-- **unit job**: ruff lint + `pytest -m "not db"` (25 test) + JS helper test (7 test).
+GitHub Actions (`.github/workflows/hr-analytics-ci.yml`) runs on every push/PR:
+- **unit job**: ruff lint + `pytest -m "not db"` (25 tests) + JS helper tests (7 tests).
 - **integration job**: MySQL+Postgres service → generate → ingest → `dbt run` → **`dbt test` (quality gate)**
-  → ML train+score → export → `pytest -m db`. Toàn pipeline re-run mỗi push.
+  → ML train+score → export → `pytest -m db`. Full pipeline re-runs on every push.
 
 ```bash
 pip install -r requirements-dev.txt
-pytest -m "not db"   # unit nhanh
+pytest -m "not db"   # fast unit tests
 node tests/js/test_helpers.mjs
 ruff check src dags tests
 # xem tests/README.md

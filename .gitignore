@@ -7,6 +7,8 @@
 docs/build-journey.md
 DEPLOY.md
 processing.md
+CLAUDE.md
+.claude/
 
 # Python
 __pycache__/
@@ -23,6 +25,7 @@ hr_analytics/target/
 hr_analytics/dbt_packages/
 hr_analytics/logs/
 logs/
+docker/dbt_profile/.user.yml
 
 # Airflow (Phase 6) — standalone tự sinh các file này, KHÔNG commit
 dags/__pycache__/
@@ -39,10 +42,11 @@ data/*.json
 data/*.sql.gz
 !data/.gitkeep
 
-# ML artifacts — ignore model binary, GIỮ metrics/feature json để show kết quả
+# ML artifacts — ignore model binary and eval output
 *.pkl
 *.joblib
 *.model
+src/ml/models/*.json
 
 # Test / CI artifacts (Phase 7)
 .pytest_cache/

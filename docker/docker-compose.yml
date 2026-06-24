@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hr_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hr_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Changph03@}
       POSTGRES_DB: ${POSTGRES_DB:-hr_db}
     ports:
       # Host 5434 (không 5433) để chạy song song với project 03 cũng dùng 5433.
@@ -26,17 +26,17 @@ services:
     container_name: hr_mysql
     restart: unless-stopped
     environment:
-      MYSQL_USER: ${MYSQL_USER:-hr_analyst}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-hr_mysql_pass}
-      MYSQL_DATABASE: ${MYSQL_DB:-hr_warehouse}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Changph03@}
+      MYSQL_DATABASE: ${MYSQL_DB:-hr_db}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Changph03@}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ../sql/mysql_raw_schema.sql:/docker-entrypoint-initdb.d/01_raw.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "hr_analyst", "--password=hr_mysql_pass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "mysql", "--password=Changph03@"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: Changph03@
       POSTGRES_DB: airflow
     volumes:
       - airflow_db_data:/var/lib/postgresql/data
@@ -92,23 +92,23 @@ services:
     environment:
       # ── Airflow core ──
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_postgres:5432/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:Changph03%40@airflow_postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
-      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
-      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-Changph03@}
       # ── Override host cho script/dbt: nối DB container qua SERVICE NAME (không localhost) ──
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"        # cổng nội bộ container, không phải 5433 map ra host
       POSTGRES_DB: ${POSTGRES_DB:-hr_db}
       POSTGRES_USER: ${POSTGRES_USER:-hr_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hr_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Changph03@}
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
-      MYSQL_DB: ${MYSQL_DB:-hr_warehouse}
-      MYSQL_USER: ${MYSQL_USER:-hr_analyst}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-hr_mysql_pass}
+      MYSQL_DB: ${MYSQL_DB:-hr_db}
+      MYSQL_USER: ${MYSQL_USER:-mysql}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Changph03@}
       DBT_PROFILES_DIR: /opt/airflow/dbt_profile
       # Slack alert (tùy chọn): để trống thì task alert chỉ log, không gửi
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
@@ -124,7 +124,7 @@ services:
     # 1 lệnh: init DB + tạo admin user (nếu cần) rồi chạy standalone (scheduler+webserver)
     command: >
       bash -c "airflow db migrate &&
-               airflow users create --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin}
+               airflow users create --username ${AIRFLOW_ADMIN_USER:-airflow} --password ${AIRFLOW_ADMIN_PASSWORD:-Changph03@}
                  --firstname HR --lastname Admin --role Admin --email admin@hr.local || true &&
                airflow standalone"
 

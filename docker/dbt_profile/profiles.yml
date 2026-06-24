@@ -9,7 +9,8 @@ hr_analytics:
       type: mysql
       server: "{{ env_var('MYSQL_HOST', 'mysql') }}"
       port: "{{ env_var('MYSQL_PORT', '3306') | int }}"
-      database: "{{ env_var('MYSQL_DB', 'hr_warehouse') }}"
-      schema: "{{ env_var('MYSQL_DB', 'hr_warehouse') }}"
-      username: "{{ env_var('MYSQL_USER', 'hr_analyst') }}"
-      password: "{{ env_var('MYSQL_PASSWORD', 'hr_mysql_pass') }}"
+      database: "{{ env_var('MYSQL_DB', 'hr_db') }}"
+      schema: "{{ env_var('MYSQL_DB', 'hr_db') }}"
+      username: "{{ env_var('MYSQL_USER', 'mysql') }}"
+      password: "{{ env_var('MYSQL_PASSWORD', 'Changph03@') }}"
+
