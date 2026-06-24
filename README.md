@@ -10,6 +10,68 @@
 
 ---
 
+## How to Run
+
+```bash
+# 1. Start services (PostgreSQL + MySQL + Adminer)
+cp .env.example .env          # fill in passwords for the variables in .env
+docker-compose -f docker/docker-compose.yml up -d
+
+# 2. Generate synthetic data into PostgreSQL
+pip install -r src/generator/requirements.txt
+python src/generator/generate_hr_data.py --truncate
+
+# 3. Load PostgreSQL → MySQL (incremental, idempotent)
+pip install -r src/ingest/requirements.txt
+python src/ingest/load_to_mysql.py
+
+# 4. Run dbt models (staging → core → mart)
+cd hr_analytics
+dbt run        # 18 models
+dbt test       # 53 data quality tests
+
+# 5. Train + score attrition risk   (Phase 4 — DONE, AUC 0.71)
+pip install -r src/ml/requirements.txt
+cd src/ml
+python train_attrition.py           # train XGBoost + save model
+python score_attrition.py           # score active employees + SHAP → MySQL attrition_scores
+cd ../..
+
+# 6. Dashboard                      (Phase 5 — DONE, 2 tab / 5 section)
+python src/dashboard/export_marts.py   # query mart_* + attrition_scores → js/data.js
+start src/dashboard/index.html         # open file directly (no server needed)
+```
+
+> ⚠️ If you re-run the generator with `--truncate`, you MUST use `load_to_mysql.py --full-load`
+> (not incremental) to reset the watermark — otherwise MySQL will drift out of sync with PostgreSQL.
+
+### Viewing the database
+
+> ⚠️ **MySQL (3306) and PostgreSQL (5433) cannot be opened in a browser** — they speak their own
+> TCP protocol, not HTTP. Opening `localhost:3306` returns `ERR_INVALID_HTTP_RESPONSE`,
+> `localhost:5433` returns `ERR_EMPTY_RESPONSE` — this is **normal** and means the DB is running.
+
+To inspect data, use one of the following:
+
+| Method | Details |
+|---|---|
+| **Adminer (web UI)** | http://localhost:8081 — server `mysql` or `postgres` (service name, not 127.0.0.1) |
+| DB client GUI | DBeaver / TablePlus → host `127.0.0.1`, port `3306` (MySQL) or `5434` (PG) |
+| CLI | `docker exec hr_mysql mysql -u mysql -p hr_db` |
+
+**Adminer login** (use values from `.env`):
+- MySQL → System: `MySQL`, Server: `mysql`, User: `MYSQL_USER`, Pass: `MYSQL_PASSWORD`, DB: `MYSQL_DB`
+- PostgreSQL → System: `PostgreSQL`, Server: `postgres`, User: `POSTGRES_USER`, Pass: `POSTGRES_PASSWORD`, DB: `POSTGRES_DB`
+
+### Airflow orchestration
+
+```bash
+docker compose -f docker/docker-compose.yml --profile airflow up -d --build
+# UI: http://localhost:8080 (AIRFLOW_ADMIN_USER/AIRFLOW_ADMIN_PASSWORD from .env) — see dags/README.md
+```
+
+---
+
 ## Overview
 
 End-to-end HR analytics system built on a synthetic dataset of 10,000 employees across 3 years. Covers the full employee lifecycle: hiring funnel, performance scoring, attrition prediction, headcount planning, and compensation benchmarking.
@@ -132,61 +194,6 @@ Full load PostgreSQL → MySQL: **~232,765 rows in ~30s**.
 
 ---
 
-## How to Run
-
-```bash
-# 1. Start services (PostgreSQL + MySQL + Adminer)
-cp .env.example .env          # fill in passwords for the variables in .env
-docker-compose -f docker/docker-compose.yml up -d
-
-# 2. Generate synthetic data into PostgreSQL
-pip install -r src/generator/requirements.txt
-python src/generator/generate_hr_data.py --truncate
-
-# 3. Load PostgreSQL → MySQL (incremental, idempotent)
-pip install -r src/ingest/requirements.txt
-python src/ingest/load_to_mysql.py
-
-# 4. Run dbt models (staging → core → mart)
-cd hr_analytics
-dbt run        # 18 models
-dbt test       # 53 data quality tests
-
-# 5. Train + score attrition risk   (Phase 4 — DONE, AUC 0.71)
-pip install -r src/ml/requirements.txt
-cd src/ml
-python train_attrition.py           # train XGBoost + save model
-python score_attrition.py           # score active employees + SHAP → MySQL attrition_scores
-cd ../..
-
-# 6. Dashboard                      (Phase 5 — DONE, 2 tab / 5 section)
-python src/dashboard/export_marts.py   # query mart_* + attrition_scores → js/data.js
-start src/dashboard/index.html         # open file directly (no server needed)
-```
-
-> ⚠️ If you re-run the generator with `--truncate`, you MUST use `load_to_mysql.py --full-load`
-> (not incremental) to reset the watermark — otherwise MySQL will drift out of sync with PostgreSQL.
-
-### Viewing the database
-
-> ⚠️ **MySQL (3306) and PostgreSQL (5433) cannot be opened in a browser** — they speak their own
-> TCP protocol, not HTTP. Opening `localhost:3306` returns `ERR_INVALID_HTTP_RESPONSE`,
-> `localhost:5433` returns `ERR_EMPTY_RESPONSE` — this is **normal** and means the DB is running.
-
-To inspect data, use one of the following:
-
-| Method | Details |
-|---|---|
-| **Adminer (web UI)** | http://localhost:8081 — server `mysql` or `postgres` (service name, not 127.0.0.1) |
-| DB client GUI | DBeaver / TablePlus → host `127.0.0.1`, port `3306` (MySQL) or `5434` (PG) |
-| CLI | `docker exec hr_mysql mysql -u mysql -p hr_db` |
-
-**Adminer login** (use values from `.env`):
-- MySQL → System: `MySQL`, Server: `mysql`, User: `MYSQL_USER`, Pass: `MYSQL_PASSWORD`, DB: `MYSQL_DB`
-- PostgreSQL → System: `PostgreSQL`, Server: `postgres`, User: `POSTGRES_USER`, Pass: `POSTGRES_PASSWORD`, DB: `POSTGRES_DB`
-
----
-
 ## dbt Models (Phase 3 — DONE, 18/18 run + 53/53 test PASS)
 
 ### Staging (views) — clean raw layer
@@ -238,11 +245,6 @@ DAG `hr_daily_pipeline` (schedule `0 6 * * *`):
 `ingest → dbt run → dbt test (quality gate) → ml score → export dashboard → attrition alert`.
 `dbt test` failure → pipeline stops, dashboard is not published with bad data.
 
-```bash
-docker compose -f docker/docker-compose.yml --profile airflow up -d --build
-# UI: http://localhost:8080 (AIRFLOW_ADMIN_USER/AIRFLOW_ADMIN_PASSWORD from .env) — see dags/README.md
-```
-
 ### 5. CI/CD + Test Automation — Phase 7 ✅
 GitHub Actions (`.github/workflows/hr-analytics-ci.yml`) runs on every push/PR:
 - **unit job**: ruff lint + `pytest -m "not db"` (25 tests) + JS helper tests (7 tests).
@@ -254,7 +256,7 @@ pip install -r requirements-dev.txt
 pytest -m "not db"   # fast unit tests
 node tests/js/test_helpers.mjs
 ruff check src dags tests
-# xem tests/README.md
+# see tests/README.md
 ```
 
 ---
