@@ -1,8 +1,8 @@
-version: '3.9'
+name: hr-analytics
 
 services:
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: hr_postgres
     restart: unless-stopped
     environment:
@@ -12,7 +12,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v16:/var/lib/postgresql/data
       - ../sql/init_schema.sql:/docker-entrypoint-initdb.d/01_init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hr_user} -d ${POSTGRES_DB:-hr_db}"]
@@ -59,7 +59,7 @@ services:
 
   # Metadata DB RIÊNG cho Airflow (tách khỏi OLTP postgres để không lẫn concern)
   airflow_postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: hr_airflow_db
     profiles: ["airflow"]
     restart: unless-stopped
@@ -128,7 +128,11 @@ services:
                airflow standalone"
 
 volumes:
-  postgres_data:
+  postgres_data_v16:
+  # Data raw thật nằm ở volume cũ docker_mysql_data (tạo từ phiên trước khi compose chưa có name).
+  # Trỏ external để giữ nguyên data, không tạo volume rỗng mới theo prefix project.
   mysql_data:
+    external: true
+    name: docker_mysql_data
   airflow_db_data:
   airflow_logs:

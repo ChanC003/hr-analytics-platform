@@ -98,7 +98,7 @@ Full load PostgreSQL → MySQL: **~232,765 rows trong ~30s**.
 ## Project Structure
 
 ```
-05-HR-Analytics-Platform/
+04-HR-Analytics-Platform/
 ├── .env.example            ← Mẫu env vars (KHÔNG commit .env thật)
 ├── .gitignore              ← Ignore .env, target/, __pycache__, data lớn
 ├── README.md

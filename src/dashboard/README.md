@@ -1,7 +1,7 @@
 # src/dashboard — HTML Dashboard (Phase 5 ✅ DONE)
 
 Static HTML dashboard 5 tab, không cần BI tool. Tuân thủ `html-build.md` (multi-file) + `design.md`
-(dark theme `#0d1117`, accent teal `#5eead4` theo màu project 05 trong portfolio).
+(dark theme `#0d1117`, accent teal `#5eead4` theo màu project 04 trong portfolio).
 
 ## Cấu trúc (multi-file)
 

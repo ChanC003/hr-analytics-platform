@@ -1,6 +1,6 @@
 name: CI
 
-# CI cho repo HR Analytics Platform (project 05 đứng riêng làm repo root).
+# CI cho repo HR Analytics Platform (project 04 đứng riêng làm repo root).
 on:
   push:
     branches: [main]
