@@ -10,7 +10,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hr_pass}
       POSTGRES_DB: ${POSTGRES_DB:-hr_db}
     ports:
-      - "5433:5432"
+      # Host 5434 (không 5433) để chạy song song với project 03 cũng dùng 5433.
+      - "5434:5432"
     volumes:
       - postgres_data_v16:/var/lib/postgresql/data
       - ../sql/init_schema.sql:/docker-entrypoint-initdb.d/01_init.sql
@@ -80,7 +81,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.airflow
-    image: hr-airflow:latest
+    image: data-airflow:2.9.3
     container_name: hr_airflow
     profiles: ["airflow"]
     restart: unless-stopped
@@ -119,7 +120,7 @@ services:
       - ./dbt_profile:/opt/airflow/dbt_profile      # profile container (host=mysql)
       - airflow_logs:/opt/airflow/logs
     ports:
-      - "8080:8080"   # Airflow UI
+      - "8090:8080"   # Airflow UI — host 8090 (không 8080) để không đụng Airflow của project 02
     # 1 lệnh: init DB + tạo admin user (nếu cần) rồi chạy standalone (scheduler+webserver)
     command: >
       bash -c "airflow db migrate &&
