@@ -76,7 +76,28 @@ services:
       timeout: 5s
       retries: 5
 
-  # Image dùng chung cho init + scheduler/webserver
+  # ── airflow-init: migrate DB + tạo admin user, chạy 1 lần rồi exit ──
+  airflow-init:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.airflow
+    image: data-airflow:2.9.3
+    container_name: hr_airflow_init
+    profiles: ["airflow"]
+    restart: "no"
+    depends_on:
+      airflow_postgres: { condition: service_healthy }
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:Changph03%40@airflow_postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-Changph03@}
+    command: >
+      bash -c "airflow db migrate &&
+               airflow users create --username ${AIRFLOW_ADMIN_USER:-airflow} --password ${AIRFLOW_ADMIN_PASSWORD:-Changph03@} --firstname HR --lastname Admin --role Admin --email admin@hr.local || true"
+
+  # ── airflow: scheduler + webserver (chạy sau khi init xong) ──
   airflow:
     build:
       context: ..
@@ -87,6 +108,7 @@ services:
     restart: unless-stopped
     depends_on:
       airflow_postgres: { condition: service_healthy }
+      airflow-init:     { condition: service_completed_successfully }
       mysql:            { condition: service_healthy }
       postgres:         { condition: service_healthy }
     environment:
@@ -121,12 +143,7 @@ services:
       - airflow_logs:/opt/airflow/logs
     ports:
       - "8090:8080"   # Airflow UI — host 8090 (không 8080) để không đụng Airflow của project 02
-    # 1 lệnh: init DB + tạo admin user (nếu cần) rồi chạy standalone (scheduler+webserver)
-    command: >
-      bash -c "airflow db migrate &&
-               airflow users create --username ${AIRFLOW_ADMIN_USER:-airflow} --password ${AIRFLOW_ADMIN_PASSWORD:-Changph03@}
-                 --firstname HR --lastname Admin --role Admin --email admin@hr.local || true &&
-               airflow standalone"
+    command: airflow standalone
 
 volumes:
   postgres_data_v16:
