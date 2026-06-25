@@ -47,19 +47,23 @@ start src/dashboard/index.html         # open file directly (no server needed)
 
 ### Viewing the database
 
-> ⚠️ **MySQL (3306) and PostgreSQL (5433) cannot be opened in a browser** — they speak their own
+> ⚠️ **MySQL (3306) and PostgreSQL (5434) cannot be opened in a browser** — they speak their own
 > TCP protocol, not HTTP. Opening `localhost:3306` returns `ERR_INVALID_HTTP_RESPONSE`,
-> `localhost:5433` returns `ERR_EMPTY_RESPONSE` — this is **normal** and means the DB is running.
+> `localhost:5434` returns `ERR_EMPTY_RESPONSE` — this is **normal** and means the DB is running.
 
 To inspect data, use one of the following:
 
 | Method | Details |
 |---|---|
+| **DBeaver** (recommended) | Desktop GUI — host `127.0.0.1`, port `3306` (MySQL) or `5434` (PostgreSQL) |
 | **Adminer (web UI)** | http://localhost:8081 — server `mysql` or `postgres` (service name, not 127.0.0.1) |
-| DB client GUI | DBeaver / TablePlus → host `127.0.0.1`, port `3306` (MySQL) or `5434` (PG) |
 | CLI | `docker exec hr_mysql mysql -u mysql -p hr_db` |
 
-**Adminer login** (use values from `.env`):
+**DBeaver connection** (use values from `.env`):
+- MySQL → Host: `127.0.0.1`, Port: `3306`, Database: `hr_db`, User: `mysql`, Password: `MYSQL_PASSWORD`
+- PostgreSQL → Host: `127.0.0.1`, Port: `5434`, Database: `hr_db`, User: `hr_user`, Password: `POSTGRES_PASSWORD`
+
+**Adminer login** (alternative, browser-based):
 - MySQL → System: `MySQL`, Server: `mysql`, User: `MYSQL_USER`, Pass: `MYSQL_PASSWORD`, DB: `MYSQL_DB`
 - PostgreSQL → System: `PostgreSQL`, Server: `postgres`, User: `POSTGRES_USER`, Pass: `POSTGRES_PASSWORD`, DB: `POSTGRES_DB`
 
@@ -90,7 +94,7 @@ Key differentiators:
 Synthetic HR Data Generator (Python + Faker)
         │
         ▼
-PostgreSQL (OLTP HR system, port 5433)
+PostgreSQL (OLTP HR system, port 5434)
         │
    Python batch ingest (watermark-based incremental)
         │
@@ -166,7 +170,7 @@ Full load PostgreSQL → MySQL: **~232,765 rows in ~30s**.
 ├── README.md
 ├── processing.md           ← Phase-by-phase progress log
 ├── docker/
-│   └── docker-compose.yml  ← PostgreSQL (5433) + MySQL (3306)
+│   └── docker-compose.yml  ← PostgreSQL (5434) + MySQL (3306)
 ├── sql/
 │   ├── init_schema.sql         ← PostgreSQL OLTP schema + seed
 │   └── mysql_raw_schema.sql    ← MySQL raw layer + _load_watermarks
